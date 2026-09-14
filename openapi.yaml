@@ -1,0 +1,2801 @@
+openapi: 3.0.3
+info:
+  title: Vincula
+  version: 0.1.0
+  description: >-
+    Research-to-commercialisation and talent pipeline ledger for publicly funded AI.
+    Projects advance through research, invention, prototype and in-market stages only
+    against stage evidence. Inventions must resolve to a protection route, and software
+    subject matter is refused a patent route and offered author's rights instead.
+    Portfolio cohorts declare conversion ratios, spin-out equity is held as a portfolio
+    position, researcher classification mismatches are counted, and every commitment
+    carries an administration horizon with an explicit re-adoption decision.
+  x-product-slug: ai-gov-vincula
+  x-source: ai-in-gov/Towards-an-ai-strategy-in-Mexico/
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Pipeline
+    description: Projects and stage-gated advancement from research to market
+  - name: Awards
+    description: Funding awards, risk grading, and sector council priorities
+  - name: Protection
+    description: Invention disclosure, protection routing, and filings
+  - name: Validation
+    description: Prototypes, commercial validation, sandboxes, and running services
+  - name: Equity
+    description: Spin-outs, state equity positions, and recycled proceeds
+  - name: Researchers
+    description: Researcher classification, joint appointments, and workload
+  - name: Talent
+    description: Postgraduate programmes, cohorts, scholarships, and destinations
+  - name: Regional
+    description: State attribution and geographic concentration
+  - name: Continuity
+    description: Administration horizons, handover packs, and re-adoption
+  - name: Reporting
+    description: Portfolio report and reform evidence registers
+paths:
+  /v1/projects:
+    get:
+      operationId: listPipelineProjects
+      tags: [Pipeline]
+      summary: List projects with their current pipeline stage
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: stage
+          in: query
+          schema:
+            $ref: "#/components/schemas/PipelineStage"
+        - name: stateCode
+          in: query
+          schema:
+            type: string
+        - name: cohortId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Projects page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopePipelineProject"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: registerPipelineProject
+      tags: [Pipeline]
+      summary: Register a publicly funded AI project at its current stage
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PipelineProjectCreate"
+      responses:
+        "201":
+          description: Project registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePipelineProject"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /v1/projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getPipelineProject
+      tags: [Pipeline]
+      summary: Retrieve a project with its stage evidence and linkages
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePipelineProject"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/projects/{projectId}/stage-advancements:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: advanceProjectStage
+      tags: [Pipeline]
+      summary: Advance a project to the next stage against that stage's evidence
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageAdvancementCreate"
+      responses:
+        "201":
+          description: Advancement approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeStageAdvancement"
+        "409":
+          description: Refused because required stage evidence is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/portfolio-cohorts:
+    get:
+      operationId: listPortfolioCohorts
+      tags: [Pipeline]
+      summary: List portfolio cohorts with target and actual conversion
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cohorts page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopePortfolioCohort"
+    post:
+      operationId: openPortfolioCohort
+      tags: [Pipeline]
+      summary: Open a cohort with declared funnel conversion targets
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortfolioCohortCreate"
+      responses:
+        "201":
+          description: Cohort opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePortfolioCohort"
+  /v1/funding-mechanisms:
+    get:
+      operationId: listFundingMechanisms
+      tags: [Awards]
+      summary: List the funding mechanisms whose requirements the AI fund aligns
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: alignedToAiFund
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Funding mechanisms page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeFundingMechanism"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: registerFundingMechanism
+      tags: [Awards]
+      summary: Register a funding mechanism with its risk ceiling and requirements
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FundingMechanismCreate"
+      responses:
+        "201":
+          description: Mechanism registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeFundingMechanism"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /v1/awards:
+    get:
+      operationId: listFundingAwards
+      tags: [Awards]
+      summary: List awards with risk grade and prior-success flag
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: mechanismId
+          in: query
+          schema:
+            type: string
+        - name: priorityThemeId
+          in: query
+          schema:
+            type: string
+        - name: previouslyCommerciallySuccessful
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Awards page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeFundingAward"
+    post:
+      operationId: recordFundingAward
+      tags: [Awards]
+      summary: Record an award with its novelty and risk grading
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FundingAwardCreate"
+      responses:
+        "201":
+          description: Award recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeFundingAward"
+        "422":
+          description: Rejected because risk grading is missing at decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/sector-councils:
+    get:
+      operationId: listSectorCouncils
+      tags: [Awards]
+      summary: List sector councils and their allocated funding share
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Sector councils page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeSectorCouncil"
+    post:
+      operationId: createSectorCouncil
+      tags: [Awards]
+      summary: Constitute a sector council with industry representation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SectorCouncilCreate"
+      responses:
+        "201":
+          description: Sector council constituted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeSectorCouncil"
+  /v1/sector-councils/{councilId}/priority-themes:
+    parameters:
+      - name: councilId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: setPriorityTheme
+      tags: [Awards]
+      summary: Set a priority theme and the funding share allocated under it
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriorityThemeCreate"
+      responses:
+        "201":
+          description: Priority theme set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePriorityTheme"
+  /v1/inventions:
+    get:
+      operationId: listInventions
+      tags: [Protection]
+      summary: List disclosed inventions and their protection status
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: protectionStatus
+          in: query
+          schema:
+            type: string
+            enum: [awaiting_routing, routed, filed, granted, unprotectable, abandoned]
+        - name: subjectMatter
+          in: query
+          schema:
+            $ref: "#/components/schemas/SubjectMatterType"
+      responses:
+        "200":
+          description: Inventions page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeInvention"
+    post:
+      operationId: discloseInvention
+      tags: [Protection]
+      summary: Disclose an invention arising from a project
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventionCreate"
+      responses:
+        "201":
+          description: Invention disclosed, awaiting protection routing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeInvention"
+  /v1/inventions/{inventionId}/protection-routing:
+    parameters:
+      - $ref: "#/components/parameters/InventionId"
+    post:
+      operationId: determineProtectionRoute
+      tags: [Protection]
+      summary: Determine the protection route for an invention
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProtectionRoutingCreate"
+      responses:
+        "201":
+          description: Route determined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeProtectionRouting"
+        "409":
+          description: >-
+            Route unavailable for this subject matter, for example a patent route
+            requested for software with no physical embodiment; alternative offered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/inventions/{inventionId}/filings:
+    parameters:
+      - $ref: "#/components/parameters/InventionId"
+    post:
+      operationId: recordProtectionFiling
+      tags: [Protection]
+      summary: Record a filing lodged with a registry
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProtectionFilingCreate"
+      responses:
+        "201":
+          description: Filing recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeProtectionFiling"
+  /v1/prototypes:
+    post:
+      operationId: createPrototype
+      tags: [Validation]
+      summary: Register a prototype or pilot against a project
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrototypeCreate"
+      responses:
+        "201":
+          description: Prototype registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePrototype"
+  /v1/prototypes/{prototypeId}/commercial-validation:
+    parameters:
+      - name: prototypeId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: recordCommercialValidation
+      tags: [Validation]
+      summary: Record commercial validation and operation manual delivery
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommercialValidationCreate"
+      responses:
+        "201":
+          description: Validation recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCommercialValidation"
+  /v1/prototypes/{prototypeId}/sandbox-authorisation:
+    parameters:
+      - name: prototypeId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      operationId: setSandboxAuthorisation
+      tags: [Validation]
+      summary: Attach a time-limited sandbox authorisation with its expiry
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SandboxAuthorisation"
+      responses:
+        "200":
+          description: Authorisation attached, blocks in-market advancement while sole basis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeSandboxAuthorisation"
+  /v1/running-services:
+    get:
+      operationId: listRunningServices
+      tags: [Validation]
+      summary: List services in full-scale operation
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Running services page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeRunningService"
+    post:
+      operationId: registerRunningService
+      tags: [Validation]
+      summary: Register a service reaching full-scale operation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunningServiceCreate"
+      responses:
+        "201":
+          description: Running service registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeRunningService"
+  /v1/spin-outs:
+    get:
+      operationId: listSpinOuts
+      tags: [Equity]
+      summary: List spin-outs and the state equity held in them
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: stateCode
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Spin-outs page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeSpinOut"
+    post:
+      operationId: registerSpinOut
+      tags: [Equity]
+      summary: Register a university spin-out arising from a project
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpinOutCreate"
+      responses:
+        "201":
+          description: Spin-out registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeSpinOut"
+  /v1/spin-outs/{spinOutId}/equity-position:
+    parameters:
+      - $ref: "#/components/parameters/SpinOutId"
+    put:
+      operationId: setEquityPosition
+      tags: [Equity]
+      summary: Record the equity taken by the public seed fund
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquityPositionCreate"
+      responses:
+        "200":
+          description: Equity position recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeEquityPosition"
+  /v1/spin-outs/{spinOutId}/follow-on-rounds:
+    parameters:
+      - $ref: "#/components/parameters/SpinOutId"
+    post:
+      operationId: recordFollowOnRound
+      tags: [Equity]
+      summary: Record a financing round and resulting dilution
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowOnRoundCreate"
+      responses:
+        "201":
+          description: Round recorded and position diluted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeFollowOnRound"
+  /v1/researchers:
+    get:
+      operationId: listResearchers
+      tags: [Researchers]
+      summary: List researchers with classification mismatch status
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: classificationMismatch
+          in: query
+          schema:
+            type: boolean
+        - name: stateCode
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Researchers page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeResearcher"
+    post:
+      operationId: registerResearcher
+      tags: [Researchers]
+      summary: Register a researcher with formal classification and actual field
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResearcherCreate"
+      responses:
+        "201":
+          description: Researcher registered, mismatch computed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeResearcher"
+  /v1/researchers/{researcherId}/joint-appointments:
+    parameters:
+      - $ref: "#/components/parameters/ResearcherId"
+    post:
+      operationId: declareJointAppointment
+      tags: [Researchers]
+      summary: Declare a joint public and private appointment with conflict terms
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JointAppointmentCreate"
+      responses:
+        "201":
+          description: Joint appointment declared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeJointAppointment"
+        "422":
+          description: Rejected because conflict-of-interest terms are absent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/researchers/{researcherId}/workload:
+    parameters:
+      - $ref: "#/components/parameters/ResearcherId"
+    put:
+      operationId: recordWorkload
+      tags: [Researchers]
+      summary: Record teaching and administrative load against research time
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkloadRecord"
+      responses:
+        "200":
+          description: Workload recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeWorkloadRecord"
+  /v1/postgraduate-programmes:
+    get:
+      operationId: listPostgraduateProgrammes
+      tags: [Talent]
+      summary: List programmes with maturity tier and standard assessment
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: discipline
+          in: query
+          schema:
+            $ref: "#/components/schemas/Discipline"
+        - name: maturityTier
+          in: query
+          schema:
+            $ref: "#/components/schemas/MaturityTier"
+      responses:
+        "200":
+          description: Programmes page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopePostgraduateProgramme"
+    post:
+      operationId: registerPostgraduateProgramme
+      tags: [Talent]
+      summary: Register a programme with its discipline and maturity tier
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostgraduateProgrammeCreate"
+      responses:
+        "201":
+          description: Programme registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePostgraduateProgramme"
+  /v1/student-cohorts:
+    post:
+      operationId: openStudentCohort
+      tags: [Talent]
+      summary: Open an enrolment cohort against a programme
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentCohortCreate"
+      responses:
+        "201":
+          description: Cohort opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeStudentCohort"
+  /v1/student-cohorts/{cohortId}/destinations:
+    parameters:
+      - name: cohortId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: recordCohortDestination
+      tags: [Talent]
+      summary: Record first destinations for a completing cohort
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CohortDestinationCreate"
+      responses:
+        "201":
+          description: Destinations recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCohortDestination"
+  /v1/regional/concentration:
+    get:
+      operationId: getRegionalConcentration
+      tags: [Regional]
+      summary: Geographic concentration of researchers, projects, and spin-outs
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Concentration measures by state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeStateAttribution"
+  /v1/commitments:
+    get:
+      operationId: listCommitments
+      tags: [Continuity]
+      summary: List commitments with administration horizon and adoption state
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: horizon
+          in: query
+          schema:
+            $ref: "#/components/schemas/AdministrationHorizon"
+        - name: adoptionState
+          in: query
+          schema:
+            type: string
+            enum: [active, awaiting_readoption, readopted, modified, dropped, orphaned]
+      responses:
+        "200":
+          description: Commitments page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeCommitment"
+    post:
+      operationId: createCommitment
+      tags: [Continuity]
+      summary: Record a commitment against an administration horizon
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitmentCreate"
+      responses:
+        "201":
+          description: Commitment recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCommitment"
+  /v1/handover-packs:
+    post:
+      operationId: issueHandoverPack
+      tags: [Continuity]
+      summary: Issue a handover pack at a change of administration
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HandoverPackCreate"
+      responses:
+        "201":
+          description: Handover pack issued and re-adoption window opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeHandoverPack"
+  /v1/commitments/{commitmentId}/readoption:
+    parameters:
+      - name: commitmentId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: decideCommitmentReadoption
+      tags: [Continuity]
+      summary: Re-adopt, modify, or drop a commitment after a transition
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReadoptionDecisionCreate"
+      responses:
+        "201":
+          description: Re-adoption decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeReadoptionDecision"
+  /v1/reports/portfolio:
+    get:
+      operationId: getPortfolioReport
+      tags: [Reporting]
+      summary: Pipeline conversion, protection, equity, and talent report
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 2026-A
+      responses:
+        "200":
+          description: Portfolio report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePortfolioReport"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+    InventionId:
+      name: inventionId
+      in: path
+      required: true
+      schema:
+        type: string
+    SpinOutId:
+      name: spinOutId
+      in: path
+      required: true
+      schema:
+        type: string
+    ResearcherId:
+      name: researcherId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    ResponseMeta:
+      type: object
+      required: [requestId, timestamp]
+      properties:
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: MXN
+    DisclosureState:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [publishable, aggregate_only, confidential, internal_only]
+        reason:
+          type: string
+          enum:
+            - not_restricted
+            - unfiled_invention
+            - commercial_terms
+            - personal_data
+            - prejudicial_to_filing
+    PipelineStage:
+      type: string
+      description: Stations on the route from pure research to market
+      enum: [research, invention, prototype, in_market]
+    SubjectMatterType:
+      type: string
+      enum:
+        - software_only
+        - software_in_physical_product
+        - hardware
+        - dataset
+        - process
+        - model_weights
+    ProtectionRouteType:
+      type: string
+      enum:
+        - patent
+        - author_rights_software
+        - trade_secret
+        - none_available
+    Discipline:
+      type: string
+      enum:
+        - artificial_intelligence
+        - computer_science
+        - data_and_information_sciences
+        - electronics
+        - telecommunications
+        - mathematics
+        - other
+    MaturityTier:
+      type: string
+      description: Programme maturity ladder used in the source assessment
+      enum: [recently_formed, being_formed, consolidated, international_standard]
+    AdministrationHorizon:
+      type: string
+      enum:
+        - current_administration
+        - transition_phase
+        - new_administration
+        - beyond_administrations
+    RiskGrade:
+      type: string
+      enum: [proven_low_risk, incremental, novel, high_risk_high_reward]
+    StageEvidence:
+      type: object
+      properties:
+        publications:
+          type: integer
+        capacityBuilt:
+          type: string
+        globalRankingReference:
+          type: string
+        protectionRoutingId:
+          type: string
+        prototypeId:
+          type: string
+        commercialValidationId:
+          type: string
+        operationManualDelivered:
+          type: boolean
+        supportAndFundingSecured:
+          type: boolean
+    PipelineProject:
+      type: object
+      required: [id, title, stage, hostInstitution]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        stage:
+          $ref: "#/components/schemas/PipelineStage"
+        hostInstitution:
+          type: string
+        institutionType:
+          type: string
+          enum: [public_university, private_university, public_research_centre, national_ai_centre, company]
+        stateCode:
+          type: string
+        stateInnovationAgendaReference:
+          type: string
+        cohortId:
+          type: string
+        awardIds:
+          type: array
+          items:
+            type: string
+        researcherIds:
+          type: array
+          items:
+            type: string
+        currentStageEvidence:
+          $ref: "#/components/schemas/StageEvidence"
+        commitmentId:
+          type: string
+        disclosure:
+          $ref: "#/components/schemas/DisclosureState"
+        registeredAt:
+          type: string
+          format: date-time
+    PipelineProjectCreate:
+      type: object
+      required: [title, stage, hostInstitution]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        stage:
+          $ref: "#/components/schemas/PipelineStage"
+        hostInstitution:
+          type: string
+        institutionType:
+          type: string
+          enum: [public_university, private_university, public_research_centre, national_ai_centre, company]
+        stateCode:
+          type: string
+        stateInnovationAgendaReference:
+          type: string
+        cohortId:
+          type: string
+        awardIds:
+          type: array
+          items:
+            type: string
+        researcherIds:
+          type: array
+          items:
+            type: string
+        disclosure:
+          $ref: "#/components/schemas/DisclosureState"
+    StageAdvancement:
+      type: object
+      required: [id, projectId, fromStage, toStage, decision, decidedAt]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        fromStage:
+          $ref: "#/components/schemas/PipelineStage"
+        toStage:
+          $ref: "#/components/schemas/PipelineStage"
+        evidence:
+          $ref: "#/components/schemas/StageEvidence"
+        decision:
+          type: string
+          enum: [approved, refused]
+        missingEvidence:
+          type: array
+          items:
+            type: string
+        decidedBy:
+          type: string
+        decidedAt:
+          type: string
+          format: date-time
+    StageAdvancementCreate:
+      type: object
+      required: [toStage, evidence, decidedBy]
+      properties:
+        toStage:
+          $ref: "#/components/schemas/PipelineStage"
+        evidence:
+          $ref: "#/components/schemas/StageEvidence"
+        decidedBy:
+          type: string
+        note:
+          type: string
+    FunnelTarget:
+      type: object
+      required: [fromStage, toStage, targetCount]
+      properties:
+        fromStage:
+          type: string
+          enum: [ideas, proofs_of_concept, pilots, running_services]
+        toStage:
+          type: string
+          enum: [proofs_of_concept, pilots, running_services]
+        targetCount:
+          type: integer
+        actualCount:
+          type: integer
+        conversionTargetRatio:
+          type: number
+          format: float
+        conversionActualRatio:
+          type: number
+          format: float
+    PortfolioCohort:
+      type: object
+      required: [id, label, openedAt, funnelTargets]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        selectionRoute:
+          type: string
+          enum: [open_competition, directed_call, sector_council_priority, unsolicited]
+        openedAt:
+          type: string
+          format: date-time
+        closesAt:
+          type: string
+          format: date-time
+        funnelTargets:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunnelTarget"
+        projectCount:
+          type: integer
+        status:
+          type: string
+          enum: [open, running, closed, abandoned]
+    PortfolioCohortCreate:
+      type: object
+      required: [label, funnelTargets]
+      properties:
+        label:
+          type: string
+        selectionRoute:
+          type: string
+          enum: [open_competition, directed_call, sector_council_priority, unsolicited]
+        closesAt:
+          type: string
+          format: date-time
+        funnelTargets:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunnelTarget"
+    FundingMechanism:
+      type: object
+      required: [id, name, alignedToAiFund]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        administeringBody:
+          type: string
+        alignedToAiFund:
+          type: boolean
+          description: >-
+            True where the mechanism's requirements, evaluations and grants have been
+            aligned under the government AI fund
+        priorSuccessCeiling:
+          type: number
+          format: float
+          description: >-
+            Maximum share of the mechanism's money permitted to go to propositions that
+            had already achieved commercial success
+        permittedRiskGrades:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskGrade"
+        eligibilityRules:
+          type: string
+        reportingObligation:
+          type: string
+    FundingMechanismCreate:
+      type: object
+      required: [name, alignedToAiFund]
+      properties:
+        name:
+          type: string
+        administeringBody:
+          type: string
+        alignedToAiFund:
+          type: boolean
+        priorSuccessCeiling:
+          type: number
+          format: float
+        permittedRiskGrades:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskGrade"
+        eligibilityRules:
+          type: string
+        reportingObligation:
+          type: string
+    FundingAward:
+      type: object
+      required: [id, projectId, mechanismId, amount, riskGrade, awardedAt]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        mechanismId:
+          type: string
+          description: Funding mechanism the award was made under
+        mechanismName:
+          type: string
+        amount:
+          $ref: "#/components/schemas/Money"
+        periodStartYear:
+          type: integer
+        periodEndYear:
+          type: integer
+        riskGrade:
+          $ref: "#/components/schemas/RiskGrade"
+        previouslyCommerciallySuccessful:
+          type: boolean
+          description: True where the product or service had already succeeded in market
+        priorityThemeId:
+          type: string
+        fiscalIncentiveApplied:
+          type: boolean
+        awardedBy:
+          type: string
+        awardedAt:
+          type: string
+          format: date-time
+    FundingAwardCreate:
+      type: object
+      required: [projectId, mechanismId, amount, riskGrade, previouslyCommerciallySuccessful]
+      properties:
+        projectId:
+          type: string
+        mechanismId:
+          type: string
+        amount:
+          $ref: "#/components/schemas/Money"
+        periodStartYear:
+          type: integer
+        periodEndYear:
+          type: integer
+        riskGrade:
+          $ref: "#/components/schemas/RiskGrade"
+        previouslyCommerciallySuccessful:
+          type: boolean
+        priorityThemeId:
+          type: string
+        fiscalIncentiveApplied:
+          type: boolean
+        awardedBy:
+          type: string
+    SectorCouncil:
+      type: object
+      required: [id, sector, industryMemberCount]
+      properties:
+        id:
+          type: string
+        sector:
+          type: string
+        hostInstitution:
+          type: string
+        industryMemberCount:
+          type: integer
+        academicMemberCount:
+          type: integer
+        allocatedFundingShare:
+          type: number
+          format: float
+          description: Share of programme funding allocated under this council's framework
+        constitutedAt:
+          type: string
+          format: date-time
+    SectorCouncilCreate:
+      type: object
+      required: [sector, industryMemberCount]
+      properties:
+        sector:
+          type: string
+        hostInstitution:
+          type: string
+        industryMemberCount:
+          type: integer
+        academicMemberCount:
+          type: integer
+        allocatedFundingShare:
+          type: number
+          format: float
+    PriorityTheme:
+      type: object
+      required: [id, councilId, title]
+      properties:
+        id:
+          type: string
+        councilId:
+          type: string
+        title:
+          type: string
+        problemStatement:
+          type: string
+        allocatedAmount:
+          $ref: "#/components/schemas/Money"
+        awardsMade:
+          type: integer
+        setAt:
+          type: string
+          format: date-time
+    PriorityThemeCreate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        problemStatement:
+          type: string
+        allocatedAmount:
+          $ref: "#/components/schemas/Money"
+    Invention:
+      type: object
+      required: [id, projectId, title, subjectMatter, protectionStatus]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        title:
+          type: string
+        subjectMatter:
+          $ref: "#/components/schemas/SubjectMatterType"
+        inventorResearcherIds:
+          type: array
+          items:
+            type: string
+        owningInstitution:
+          type: string
+        protectionStatus:
+          type: string
+          enum: [awaiting_routing, routed, filed, granted, unprotectable, abandoned]
+        currentRoutingId:
+          type: string
+        disclosure:
+          $ref: "#/components/schemas/DisclosureState"
+        disclosedAt:
+          type: string
+          format: date-time
+        routingDueAt:
+          type: string
+          format: date-time
+    InventionCreate:
+      type: object
+      required: [projectId, title, subjectMatter]
+      properties:
+        projectId:
+          type: string
+        title:
+          type: string
+        subjectMatter:
+          $ref: "#/components/schemas/SubjectMatterType"
+        inventorResearcherIds:
+          type: array
+          items:
+            type: string
+        owningInstitution:
+          type: string
+        disclosure:
+          $ref: "#/components/schemas/DisclosureState"
+    ProtectionRouting:
+      type: object
+      required: [id, inventionId, route, determinedAt]
+      properties:
+        id:
+          type: string
+        inventionId:
+          type: string
+        route:
+          $ref: "#/components/schemas/ProtectionRouteType"
+        routeRefusedReason:
+          type: string
+          enum:
+            - not_refused
+            - software_not_patentable_without_physical_product
+            - subject_matter_excluded
+            - prior_disclosure
+            - cost_not_justified
+        alternativeOffered:
+          $ref: "#/components/schemas/ProtectionRouteType"
+        unprotectableReason:
+          type: string
+        reformEvidenceFlag:
+          type: boolean
+          description: Set where the gap is evidence for intellectual property reform
+        determinedBy:
+          type: string
+        determinedAt:
+          type: string
+          format: date-time
+    ProtectionRoutingCreate:
+      type: object
+      required: [route, determinedBy]
+      properties:
+        route:
+          $ref: "#/components/schemas/ProtectionRouteType"
+        unprotectableReason:
+          type: string
+        determinedBy:
+          type: string
+        note:
+          type: string
+    ProtectionFiling:
+      type: object
+      required: [id, inventionId, route, registry, filedAt]
+      properties:
+        id:
+          type: string
+        inventionId:
+          type: string
+        route:
+          $ref: "#/components/schemas/ProtectionRouteType"
+        registry:
+          type: string
+          enum: [industrial_property_authority, author_rights_register, foreign_office, wipo]
+        applicationReference:
+          type: string
+        status:
+          type: string
+          enum: [filed, examined, granted, refused, abandoned, lapsed]
+        filedAt:
+          type: string
+          format: date-time
+        grantedAt:
+          type: string
+          format: date-time
+        costToDate:
+          $ref: "#/components/schemas/Money"
+    ProtectionFilingCreate:
+      type: object
+      required: [route, registry]
+      properties:
+        route:
+          $ref: "#/components/schemas/ProtectionRouteType"
+        registry:
+          type: string
+          enum: [industrial_property_authority, author_rights_register, foreign_office, wipo]
+        applicationReference:
+          type: string
+        costToDate:
+          $ref: "#/components/schemas/Money"
+    Prototype:
+      type: object
+      required: [id, projectId, kind, status]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        kind:
+          type: string
+          enum: [proof_of_concept, pilot]
+        hostingCentre:
+          type: string
+        targetScope:
+          type: string
+        beneficiaryCount:
+          type: integer
+        status:
+          type: string
+          enum: [building, running, validated, failed, discontinued]
+        sandboxAuthorisation:
+          $ref: "#/components/schemas/SandboxAuthorisation"
+        startedAt:
+          type: string
+          format: date-time
+    PrototypeCreate:
+      type: object
+      required: [projectId, kind]
+      properties:
+        projectId:
+          type: string
+        kind:
+          type: string
+          enum: [proof_of_concept, pilot]
+        hostingCentre:
+          type: string
+        targetScope:
+          type: string
+        beneficiaryCount:
+          type: integer
+    CommercialValidation:
+      type: object
+      required: [id, prototypeId, outcome, validatedAt]
+      properties:
+        id:
+          type: string
+        prototypeId:
+          type: string
+        adopterName:
+          type: string
+        adopterType:
+          type: string
+          enum: [government_department, state_government, private_company, ngo, university]
+        outcome:
+          type: string
+          enum: [validated, validated_with_changes, not_validated]
+        operationManualDelivered:
+          type: boolean
+        supportModelDefined:
+          type: boolean
+        scalabilityAssessment:
+          type: string
+        validatedAt:
+          type: string
+          format: date-time
+    CommercialValidationCreate:
+      type: object
+      required: [outcome, operationManualDelivered]
+      properties:
+        adopterName:
+          type: string
+        adopterType:
+          type: string
+          enum: [government_department, state_government, private_company, ngo, university]
+        outcome:
+          type: string
+          enum: [validated, validated_with_changes, not_validated]
+        operationManualDelivered:
+          type: boolean
+        supportModelDefined:
+          type: boolean
+        scalabilityAssessment:
+          type: string
+    SandboxAuthorisation:
+      type: object
+      required: [authorisingBody, grantedAt, expiresAt]
+      properties:
+        authorisingBody:
+          type: string
+        legalBasis:
+          type: string
+        clientLimit:
+          type: integer
+        grantedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        soleLegalBasisForOperation:
+          type: boolean
+        extensionPermitted:
+          type: boolean
+    RunningService:
+      type: object
+      required: [id, projectId, name, operatorName, status]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        name:
+          type: string
+        operatorName:
+          type: string
+        populationServed:
+          type: integer
+        fundingSecuredThroughYear:
+          type: integer
+        supportArrangement:
+          type: string
+        replacedManualProcess:
+          type: boolean
+        status:
+          type: string
+          enum: [in_service, degraded, suspended, decommissioned]
+        wentLiveAt:
+          type: string
+          format: date-time
+    RunningServiceCreate:
+      type: object
+      required: [projectId, name, operatorName]
+      properties:
+        projectId:
+          type: string
+        name:
+          type: string
+        operatorName:
+          type: string
+        populationServed:
+          type: integer
+        fundingSecuredThroughYear:
+          type: integer
+        supportArrangement:
+          type: string
+        replacedManualProcess:
+          type: boolean
+    SpinOut:
+      type: object
+      required: [id, projectId, companyName, incorporatedAt]
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        companyName:
+          type: string
+        registryReference:
+          type: string
+        founderResearcherIds:
+          type: array
+          items:
+            type: string
+        stateCode:
+          type: string
+        inventionIds:
+          type: array
+          items:
+            type: string
+        licenceTerms:
+          type: string
+        equityPosition:
+          $ref: "#/components/schemas/EquityPosition"
+        status:
+          type: string
+          enum: [trading, dormant, acquired, wound_up]
+        incorporatedAt:
+          type: string
+          format: date-time
+    SpinOutCreate:
+      type: object
+      required: [projectId, companyName]
+      properties:
+        projectId:
+          type: string
+        companyName:
+          type: string
+        registryReference:
+          type: string
+        founderResearcherIds:
+          type: array
+          items:
+            type: string
+        stateCode:
+          type: string
+        inventionIds:
+          type: array
+          items:
+            type: string
+        licenceTerms:
+          type: string
+    EquityPosition:
+      type: object
+      required: [fundName, initialSharePercent, investedAmount]
+      properties:
+        fundName:
+          type: string
+        initialSharePercent:
+          type: number
+          format: float
+        currentSharePercent:
+          type: number
+          format: float
+        investedAmount:
+          $ref: "#/components/schemas/Money"
+        investmentBasis:
+          type: string
+          enum: [commercial_terms, concessionary, grant_with_equity]
+        realisedProceeds:
+          $ref: "#/components/schemas/Money"
+        proceedsRecycledToFund:
+          $ref: "#/components/schemas/Money"
+        conflictDeclarationsOnFile:
+          type: boolean
+        disclosure:
+          $ref: "#/components/schemas/DisclosureState"
+    EquityPositionCreate:
+      type: object
+      required: [fundName, initialSharePercent, investedAmount, investmentBasis]
+      properties:
+        fundName:
+          type: string
+        initialSharePercent:
+          type: number
+          format: float
+        investedAmount:
+          $ref: "#/components/schemas/Money"
+        investmentBasis:
+          type: string
+          enum: [commercial_terms, concessionary, grant_with_equity]
+        conflictDeclarationsOnFile:
+          type: boolean
+    FollowOnRound:
+      type: object
+      required: [id, spinOutId, roundLabel, raisedAmount, closedAt]
+      properties:
+        id:
+          type: string
+        spinOutId:
+          type: string
+        roundLabel:
+          type: string
+        raisedAmount:
+          $ref: "#/components/schemas/Money"
+        leadInvestorType:
+          type: string
+          enum: [angel, domestic_venture, foreign_venture, corporate, development_bank, public_fund]
+        postMoneyValuation:
+          $ref: "#/components/schemas/Money"
+        publicSharePercentAfter:
+          type: number
+          format: float
+        foreignAcquisitionRiskNoted:
+          type: boolean
+        closedAt:
+          type: string
+          format: date-time
+    FollowOnRoundCreate:
+      type: object
+      required: [roundLabel, raisedAmount]
+      properties:
+        roundLabel:
+          type: string
+        raisedAmount:
+          $ref: "#/components/schemas/Money"
+        leadInvestorType:
+          type: string
+          enum: [angel, domestic_venture, foreign_venture, corporate, development_bank, public_fund]
+        postMoneyValuation:
+          $ref: "#/components/schemas/Money"
+        publicSharePercentAfter:
+          type: number
+          format: float
+        foreignAcquisitionRiskNoted:
+          type: boolean
+    ResearcherClassification:
+      type: object
+      required: [formalCommission, actualField]
+      properties:
+        formalCommission:
+          type: string
+          description: Commission the researcher sits under in the national system
+        formalLevel:
+          type: string
+        actualField:
+          $ref: "#/components/schemas/Discipline"
+        mismatch:
+          type: boolean
+        evaluationStandardApplied:
+          type: string
+          enum:
+            - discipline_of_record
+            - international_computational_sciences
+            - not_evaluated
+        mismatchNote:
+          type: string
+    Researcher:
+      type: object
+      required: [id, displayName, classification]
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        institution:
+          type: string
+        stateCode:
+          type: string
+        classification:
+          $ref: "#/components/schemas/ResearcherClassification"
+        jointAppointmentCount:
+          type: integer
+        workload:
+          $ref: "#/components/schemas/WorkloadRecord"
+        projectIds:
+          type: array
+          items:
+            type: string
+        disclosure:
+          $ref: "#/components/schemas/DisclosureState"
+    ResearcherCreate:
+      type: object
+      required: [displayName, classification]
+      properties:
+        displayName:
+          type: string
+        institution:
+          type: string
+        stateCode:
+          type: string
+        classification:
+          $ref: "#/components/schemas/ResearcherClassification"
+        disclosure:
+          $ref: "#/components/schemas/DisclosureState"
+    JointAppointment:
+      type: object
+      required: [id, researcherId, companyName, conflictTerms, declaredAt]
+      properties:
+        id:
+          type: string
+        researcherId:
+          type: string
+        companyName:
+          type: string
+        role:
+          type: string
+        publicPostFractionRetained:
+          type: number
+          format: float
+        conflictTerms:
+          type: string
+        institutionApproved:
+          type: boolean
+        relatedSpinOutId:
+          type: string
+        declaredAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+    JointAppointmentCreate:
+      type: object
+      required: [companyName, conflictTerms]
+      properties:
+        companyName:
+          type: string
+        role:
+          type: string
+        publicPostFractionRetained:
+          type: number
+          format: float
+        conflictTerms:
+          type: string
+        institutionApproved:
+          type: boolean
+        relatedSpinOutId:
+          type: string
+    WorkloadRecord:
+      type: object
+      properties:
+        academicYear:
+          type: string
+        teachingHoursPerWeek:
+          type: number
+          format: float
+        administrativeHoursPerWeek:
+          type: number
+          format: float
+        researchTimeSharePercent:
+          type: number
+          format: float
+        supervisedStudentCount:
+          type: integer
+        reportedBy:
+          type: string
+    PostgraduateProgramme:
+      type: object
+      required: [id, institution, discipline, level, maturityTier]
+      properties:
+        id:
+          type: string
+        institution:
+          type: string
+        programmeName:
+          type: string
+        discipline:
+          $ref: "#/components/schemas/Discipline"
+        specialisesInAi:
+          type: boolean
+        level:
+          type: string
+          enum: [masters, doctorate, specialisation]
+        maturityTier:
+          $ref: "#/components/schemas/MaturityTier"
+        internationalStandardAssessed:
+          type: boolean
+        assessorName:
+          type: string
+        stateCode:
+          type: string
+        annualIntake:
+          type: integer
+        scholarshipSupported:
+          type: boolean
+    PostgraduateProgrammeCreate:
+      type: object
+      required: [institution, discipline, level, maturityTier]
+      properties:
+        institution:
+          type: string
+        programmeName:
+          type: string
+        discipline:
+          $ref: "#/components/schemas/Discipline"
+        specialisesInAi:
+          type: boolean
+        level:
+          type: string
+          enum: [masters, doctorate, specialisation]
+        maturityTier:
+          $ref: "#/components/schemas/MaturityTier"
+        internationalStandardAssessed:
+          type: boolean
+        assessorName:
+          type: string
+        stateCode:
+          type: string
+        annualIntake:
+          type: integer
+        scholarshipSupported:
+          type: boolean
+    Scholarship:
+      type: object
+      properties:
+        scheme:
+          type: string
+        awardedCount:
+          type: integer
+        valuePerAward:
+          $ref: "#/components/schemas/Money"
+        studyLocation:
+          type: string
+          enum: [domestic, abroad]
+        returnObligationYears:
+          type: integer
+    StudentCohort:
+      type: object
+      required: [id, programmeId, entryYear, enrolledCount]
+      properties:
+        id:
+          type: string
+        programmeId:
+          type: string
+        entryYear:
+          type: integer
+        enrolledCount:
+          type: integer
+        completedCount:
+          type: integer
+        withdrawnCount:
+          type: integer
+        femaleSharePercent:
+          type: number
+          format: float
+        scholarship:
+          $ref: "#/components/schemas/Scholarship"
+        destinationsRecorded:
+          type: boolean
+    StudentCohortCreate:
+      type: object
+      required: [programmeId, entryYear, enrolledCount]
+      properties:
+        programmeId:
+          type: string
+        entryYear:
+          type: integer
+        enrolledCount:
+          type: integer
+        femaleSharePercent:
+          type: number
+          format: float
+        scholarship:
+          $ref: "#/components/schemas/Scholarship"
+    CohortDestination:
+      type: object
+      required: [id, cohortId, recordedAt, breakdown]
+      properties:
+        id:
+          type: string
+        cohortId:
+          type: string
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              destination:
+                type: string
+                enum:
+                  - domestic_academia
+                  - domestic_industry
+                  - domestic_public_sector
+                  - domestic_startup_founded
+                  - abroad_academia
+                  - abroad_industry
+                  - unknown
+              count:
+                type: integer
+        returnsFromAbroadCount:
+          type: integer
+        attributedToAttractionEffort:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+    CohortDestinationCreate:
+      type: object
+      required: [breakdown]
+      properties:
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              destination:
+                type: string
+                enum:
+                  - domestic_academia
+                  - domestic_industry
+                  - domestic_public_sector
+                  - domestic_startup_founded
+                  - abroad_academia
+                  - abroad_industry
+                  - unknown
+              count:
+                type: integer
+        returnsFromAbroadCount:
+          type: integer
+        attributedToAttractionEffort:
+          type: string
+    StateAttribution:
+      type: object
+      properties:
+        period:
+          type: string
+        byState:
+          type: array
+          items:
+            type: object
+            properties:
+              stateCode:
+                type: string
+              researcherCount:
+                type: integer
+              projectCount:
+                type: integer
+              spinOutCount:
+                type: integer
+              programmeCount:
+                type: integer
+              innovationAgendaReference:
+                type: string
+        capitalSharePercent:
+          type: number
+          format: float
+        topThreeStatesSharePercent:
+          type: number
+          format: float
+        statesWithNoActivity:
+          type: integer
+    Commitment:
+      type: object
+      required: [id, title, horizon, adoptionState]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        owningBody:
+          type: string
+        horizon:
+          $ref: "#/components/schemas/AdministrationHorizon"
+        recommendationReference:
+          type: string
+          description: Reference to the source recommendation, for example T1 to T4
+        dependsOnCommitmentIds:
+          type: array
+          items:
+            type: string
+        attachedMoney:
+          $ref: "#/components/schemas/Money"
+        adoptionState:
+          type: string
+          enum: [active, awaiting_readoption, readopted, modified, dropped, orphaned]
+        readoptionDueAt:
+          type: string
+          format: date-time
+    CommitmentCreate:
+      type: object
+      required: [title, horizon]
+      properties:
+        title:
+          type: string
+        owningBody:
+          type: string
+        horizon:
+          $ref: "#/components/schemas/AdministrationHorizon"
+        recommendationReference:
+          type: string
+        dependsOnCommitmentIds:
+          type: array
+          items:
+            type: string
+        attachedMoney:
+          $ref: "#/components/schemas/Money"
+    HandoverPack:
+      type: object
+      required: [id, outgoingAdministration, incomingAdministration, issuedAt, readoptionWindowDays]
+      properties:
+        id:
+          type: string
+        outgoingAdministration:
+          type: string
+        incomingAdministration:
+          type: string
+        commitmentIds:
+          type: array
+          items:
+            type: string
+        liveProjectCount:
+          type: integer
+        liveEquityPositions:
+          type: integer
+        totalMoneyInFlight:
+          $ref: "#/components/schemas/Money"
+        readoptionWindowDays:
+          type: integer
+        issuedBy:
+          type: string
+        issuedAt:
+          type: string
+          format: date-time
+    HandoverPackCreate:
+      type: object
+      required: [outgoingAdministration, incomingAdministration, readoptionWindowDays, issuedBy]
+      properties:
+        outgoingAdministration:
+          type: string
+        incomingAdministration:
+          type: string
+        readoptionWindowDays:
+          type: integer
+        issuedBy:
+          type: string
+    ReadoptionDecision:
+      type: object
+      required: [id, commitmentId, decision, decidedAt]
+      properties:
+        id:
+          type: string
+        commitmentId:
+          type: string
+        handoverPackId:
+          type: string
+        decision:
+          type: string
+          enum: [readopted, modified, dropped]
+        modificationNote:
+          type: string
+        newOwningBody:
+          type: string
+        decidedBy:
+          type: string
+        decidedAt:
+          type: string
+          format: date-time
+    ReadoptionDecisionCreate:
+      type: object
+      required: [decision, decidedBy]
+      properties:
+        decision:
+          type: string
+          enum: [readopted, modified, dropped]
+        modificationNote:
+          type: string
+        newOwningBody:
+          type: string
+        decidedBy:
+          type: string
+    PortfolioReport:
+      type: object
+      properties:
+        period:
+          type: string
+        projectsByStage:
+          type: array
+          items:
+            type: object
+            properties:
+              stage:
+                $ref: "#/components/schemas/PipelineStage"
+              count:
+                type: integer
+        cohortConversion:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunnelTarget"
+        stageAdvancementsRefused:
+          type: integer
+        medianDaysDisclosureToRouting:
+          type: number
+          format: float
+        routeRefusalsCaught:
+          type: integer
+        inventionsUnprotectable:
+          type: integer
+        unprotectableReformEvidenceCount:
+          type: integer
+        filingsGranted:
+          type: integer
+        prototypesValidated:
+          type: integer
+        runningServicesInService:
+          type: integer
+        pilotsBlockedBySandboxExpiry:
+          type: integer
+        awardMoneyToPreviouslySuccessful:
+          $ref: "#/components/schemas/Money"
+        awardMoneyToPreviouslySuccessfulSharePercent:
+          type: number
+          format: float
+        awardsByRiskGrade:
+          type: array
+          items:
+            type: object
+            properties:
+              riskGrade:
+                $ref: "#/components/schemas/RiskGrade"
+              count:
+                type: integer
+        fundingAllocatedUnderSectorCouncils:
+          $ref: "#/components/schemas/Money"
+        spinOutsIncorporated:
+          type: integer
+        equityRealisations:
+          type: integer
+        proceedsRecycledToFund:
+          $ref: "#/components/schemas/Money"
+        classificationMismatchCount:
+          type: integer
+        jointAppointmentsDeclared:
+          type: integer
+        programmesAtInternationalStandard:
+          type: integer
+        graduatesRetainedDomesticSharePercent:
+          type: number
+          format: float
+        returnsFromAbroadCount:
+          type: integer
+        regionalConcentration:
+          $ref: "#/components/schemas/StateAttribution"
+        commitmentsOrphaned:
+          type: integer
+        issuedAt:
+          type: string
+          format: date-time
+    DataEnvelopePipelineProject:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/PipelineProject"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeStageAdvancement:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/StageAdvancement"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopePortfolioCohort:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/PortfolioCohort"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeFundingMechanism:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/FundingMechanism"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeFundingAward:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/FundingAward"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeSectorCouncil:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/SectorCouncil"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopePriorityTheme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/PriorityTheme"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeInvention:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Invention"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeProtectionRouting:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ProtectionRouting"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeProtectionFiling:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ProtectionFiling"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopePrototype:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Prototype"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeCommercialValidation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/CommercialValidation"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeSandboxAuthorisation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/SandboxAuthorisation"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeRunningService:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/RunningService"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeSpinOut:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/SpinOut"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeEquityPosition:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/EquityPosition"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeFollowOnRound:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/FollowOnRound"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeResearcher:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Researcher"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeJointAppointment:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/JointAppointment"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeWorkloadRecord:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkloadRecord"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopePostgraduateProgramme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/PostgraduateProgramme"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeStudentCohort:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/StudentCohort"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeCohortDestination:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/CohortDestination"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeStateAttribution:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/StateAttribution"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeCommitment:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Commitment"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeHandoverPack:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/HandoverPack"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeReadoptionDecision:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ReadoptionDecision"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopePortfolioReport:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/PortfolioReport"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopePipelineProject:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/PipelineProject"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopePortfolioCohort:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/PortfolioCohort"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeFundingMechanism:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/FundingMechanism"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeFundingAward:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/FundingAward"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeSectorCouncil:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/SectorCouncil"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeInvention:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Invention"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeRunningService:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/RunningService"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeSpinOut:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/SpinOut"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeResearcher:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Researcher"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopePostgraduateProgramme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/PostgraduateProgramme"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeCommitment:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Commitment"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
